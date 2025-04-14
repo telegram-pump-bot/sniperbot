@@ -1,2 +1,2 @@
-python-telegram-bot==20.0
-git+https://github.com/JustAnotherArchivist/snscrape.git
+python-telegram-bot==20.3 snscrape
+
