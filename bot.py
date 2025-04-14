@@ -3,18 +3,18 @@ import snscrape.modules.twitter as sntwitter
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Jouw Telegram Bot API-token
+# Telegram Bot Token
 TELEGRAM_API_TOKEN = '8005544914:AAHY45Fc3cP6eCKSRrTmlaPOCxSYTLqyT2A'
 
 # Logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-# Functie voor /start
+# Start commando
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Bot is actief! Gebruik /check om te zoeken naar pump.fun links.")
 
-# Functie voor /check
+# Check commando
 async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tweets = get_latest_tweets()
     if not tweets:
@@ -23,7 +23,7 @@ async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for tweet in tweets:
             await update.message.reply_text(f"Gevonden: {tweet['url']}")
 
-# Tweets scrapen
+# Scraper
 def get_latest_tweets():
     account = "cryptolaixe"
     tweet_list = []
@@ -35,15 +35,12 @@ def get_latest_tweets():
             break
     return tweet_list
 
-# Start de bot
-async def main():
+# Start de bot (zonder async main)
+def main():
     app = ApplicationBuilder().token(TELEGRAM_API_TOKEN).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("check", check))
-
-    await app.run_polling()
+    app.run_polling()
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+    main()
