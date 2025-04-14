@@ -1,139 +1,49 @@
 import logging
-
 import snscrape.modules.twitter as sntwitter
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-import telegram
-
-from telegram.ext import Updater, CommandHandler, CallbackContext, Update
-
-import re
-
-
-
-# Setup logging
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-
-                    level=logging.INFO)
-
-logger = logging.getLogger(__name__)
-
-
-
-# Je Telegram bot token
-
+# Jouw Telegram Bot API-token
 TELEGRAM_API_TOKEN = '8005544914:AAHY45Fc3cP6eCKSRrTmlaPOCxSYTLqyT2A'
 
+# Logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
 
+# Functie voor /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot is actief! Gebruik /check om te zoeken naar pump.fun links.")
 
-# Functie om te beginnen met de bot
-
-def start(update: Update, context: CallbackContext) -> None:
-
-    update.message.reply_text("Bot is gestart! Stuur /check om te controleren op nieuwe pump.fun links.")
-
-
-
-# Functie om te controleren op nieuwe pump.fun links
-
-def check(update: Update, context: CallbackContext) -> None:
-
+# Functie voor /check
+async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tweets = get_latest_tweets()
-
-
-
     if not tweets:
-
-        update.message.reply_text("Geen nieuwe pump.fun links gevonden.")
-
+        await update.message.reply_text("Geen pump.fun links gevonden.")
     else:
-
         for tweet in tweets:
+            await update.message.reply_text(f"Gevonden: {tweet['url']}")
 
-            update.message.reply_text(f"Nieuwe tweet gevonden: {tweet['url']}")
-
-
-
-# Functie om de laatste tweets op te halen van het specifieke account
-
+# Tweets scrapen
 def get_latest_tweets():
-
-    # Account waarvan je tweets wil scrapen
-
     account = "cryptolaixe"
-
-    
-
-    # Een lijst om de gevonden tweets op te slaan
-
     tweet_list = []
 
-
-
-    # Scrape de laatste 5 tweets van het account
-
     for tweet in sntwitter.TwitterUserScraper(account).get_items():
-
         if 'pump.fun' in tweet.content:
-
             tweet_list.append({'url': f'https://twitter.com/{account}/status/{tweet.id}'})
-
-        if len(tweet_list) >= 5:  # Stop na 5 tweets
-
+        if len(tweet_list) >= 5:
             break
-
     return tweet_list
 
+# Start de bot
+async def main():
+    app = ApplicationBuilder().token(TELEGRAM_API_TOKEN).build()
 
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("check", check))
 
-# Foutmelding loggen
-
-def error(update: Update, context: CallbackContext) -> None:
-
-    logger.warning(f"Update {update} caused error {context.error}")
-
-
-
-def main() -> None:
-
-    # Maak de Updater aan en geef je token
-
-    updater = Updater(TELEGRAM_API_TOKEN)
-
-
-
-    # Haal de dispatcher op om handlers toe te voegen
-
-    dispatcher = updater.dispatcher
-
-
-
-    # Voeg commando handlers toe
-
-    dispatcher.add_handler(CommandHandler("start", start))
-
-    dispatcher.add_handler(CommandHandler("check", check))
-
-
-
-    # Log errors
-
-    dispatcher.add_error_handler(error)
-
-
-
-    # Start de bot
-
-    updater.start_polling()
-
-
-
-    # Draai de bot totdat deze wordt gestopt
-
-    updater.idle()
-
-
+    await app.run_polling()
 
 if __name__ == '__main__':
-
-    main()
+    import asyncio
+    asyncio.run(main())
