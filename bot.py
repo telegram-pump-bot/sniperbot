@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Je Telegram bot token
 
-TELEGRAM_API_TOKEN = '8005544914:AAHY45Fc3cP6eCKSRrTmlaPOCxSYTLqyT2A’
+TELEGRAM_API_TOKEN = '8005544914:AAHY45Fc3cP6eCKSRrTmlaPOCxSYTLqyT2A'
 
 
 
