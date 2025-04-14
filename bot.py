@@ -3,6 +3,7 @@ import certifi
 import logging
 
 os.environ["SSL_CERT_FILE"] = certifi.where()
+
 import re
 import asyncio
 import snscrape.modules.twitter as sntwitter
