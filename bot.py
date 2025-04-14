@@ -1,27 +1,42 @@
 import logging
 import os
 import certifi
+import logging
+import asyncio
+import re
+import snscrape.modules.twitter as sntwitter
+
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, JobQueue
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import snscrape.modules.twitter as sntwitter
 import re
 import asyncio
 
+# Zorg dat SSL correct werkt op Render
 # Configureren van SSL-certificaat voor Render
 os.environ["SSL_CERT_FILE"] = certifi.where()
 
+# Logging activeren
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 # Configureren van logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Telegram API-token
-API_TOKEN = 'JOUW_API_TOKEN_HIER'  # Vul hier je Telegram bot token in.
+# Telegram API Token
+TELEGRAM_API_TOKEN = "8005544914:AAHY45Fc3cP6eCKSRrTmlaPOCxSYTLqyT2A"
 
-# Functie voor de /check command
+# /start commando
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot is actief! Gebruik /check om tokens te checken.")
+
+# /check commando
 async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tokens = []
     for tweet in sntwitter.TwitterUserScraper("cryptolaixe").get_items():
-        matches = re.findall(r'https://pump\.fun/([A-Za-z0-9]+)', tweet.content)
+        # Zoek naar token adressen (40 alfanumerieke tekens)
+        matches = re.findall(r'\b[A-Za-z0-9]{40}\b', tweet.content)
         if matches:
             tokens.extend(matches)
         if len(tokens) >= 5:
@@ -33,15 +48,12 @@ async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for token in tokens:
             await update.message.reply_text(f"Gevonden token adres: `{token}`", parse_mode="Markdown")
 
-# Functie voor de /start commando
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hallo! Ik ben je pump.fun bot. Gebruik /check om de laatste token adressen te vinden.")
-
 # Functie om tweets periodiek te controleren
 async def check_for_new_tweets(context: ContextTypes.DEFAULT_TYPE):
     tokens = []
     for tweet in sntwitter.TwitterUserScraper("cryptolaixe").get_items():
-        matches = re.findall(r'https://pump\.fun/([A-Za-z0-9]+)', tweet.content)
+        # Zoek naar token adressen (40 alfanumerieke tekens)
+        matches = re.findall(r'\b[A-Za-z0-9]{40}\b', tweet.content)
         if matches:
             tokens.extend(matches)
         if len(tokens) >= 5:
@@ -55,9 +67,11 @@ async def check_for_new_tweets(context: ContextTypes.DEFAULT_TYPE):
     else:
         logger.info("Geen nieuwe token adressen gevonden.")
 
+# Main functie
 # Functie voor het opstarten van de bot
 async def main():
-    application = Application.builder().token(API_TOKEN).build()
+    app = ApplicationBuilder().token(TELEGRAM_API_TOKEN).build()
+    application = Application.builder().token(TELEGRAM_API_TOKEN).build()
 
     # Voeg commandhandlers toe
     application.add_handler(CommandHandler("start", start))
@@ -69,9 +83,13 @@ async def main():
 
     # Start de bot
     logger.info("Bot is gestart!")
+    await app.run_polling()
     await application.run_polling()
 
-if __name__ == '__main__':
-    # Start de bot
-    import asyncio
-    asyncio.run(main())
+# Voor Render — vermijd asyncio.run()
+if __name__ == "__main__":
+    try:
+        asyncio.get_event_loop().run_until_complete(main())
+    except RuntimeError as e:
+        logger.error(f"Event loop error: {e}")
+
