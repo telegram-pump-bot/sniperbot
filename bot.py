@@ -1,4 +1,5 @@
 import logging
+import re
 import snscrape.modules.twitter as sntwitter
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -12,30 +13,25 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # Start commando
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Bot is actief! Gebruik /check om te zoeken naar pump.fun links.")
+    await update.message.reply_text("Bot is actief! Gebruik /check om te zoeken naar pump.fun token adressen.")
 
 # Check commando
 async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    tweets = get_latest_tweets()
-    if not tweets:
-        await update.message.reply_text("Geen pump.fun links gevonden.")
-    else:
-        for tweet in tweets:
-            await update.message.reply_text(f"Gevonden: {tweet['url']}")
-
-# Scraper
-def get_latest_tweets():
-    account = "cryptolaixe"
-    tweet_list = []
-
-    for tweet in sntwitter.TwitterUserScraper(account).get_items():
-        if 'pump.fun' in tweet.content:
-            tweet_list.append({'url': f'https://twitter.com/{account}/status/{tweet.id}'})
-        if len(tweet_list) >= 5:
+    tokens = []
+    for tweet in sntwitter.TwitterUserScraper("cryptolaixe").get_items():
+        matches = re.findall(r'https://pump\.fun/([A-Za-z0-9]+)', tweet.content)
+        if matches:
+            tokens.extend(matches)
+        if len(tokens) >= 5:
             break
-    return tweet_list
 
-# Start de bot (zonder async main)
+    if not tokens:
+        await update.message.reply_text("Geen token adressen gevonden in recente tweets.")
+    else:
+        for token in tokens:
+            await update.message.reply_text(f"Gevonden token adres: `{token}`", parse_mode="Markdown")
+
+# Start de bot
 def main():
     app = ApplicationBuilder().token(TELEGRAM_API_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
