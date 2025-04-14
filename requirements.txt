@@ -1,0 +1,2 @@
+python-telegram-bot==20.0
+snscrape==0.4.3
